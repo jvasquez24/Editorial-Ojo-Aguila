@@ -6,48 +6,67 @@
 <title>Ojo de Águila · Control de Ventas</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🦅</text></svg>">
 <style>
-:root{--bg:#FAF3E9;--card:#fff;--text:#4A2E1A;--muted:#8A6A4E;--accent:#B08050;--accent-dark:#7A5230;--border:#E5D6C3;--ok:#4A7A4E;--danger:#B5473A}
-@media (prefers-color-scheme:dark){:root{--bg:#241a12;--card:#332619;--text:#f2e6d8;--muted:#c9ac8e;--border:#4a3a28}}
-*{box-sizing:border-box}
+:root{--bg:#FBF1DC;--card:#FFFBF1;--text:#4A2E1A;--muted:#8A6A4E;--accent:#A9743F;--accent-dark:#7A5230;--border:#E8D6B5;--ok:#3F7A48;--red:#C0392B;--red-dark:#96261B}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
 .wrap{max-width:760px;margin:0 auto}
 h1{font-size:1.3rem;margin:0 0 4px}
 .sub{color:var(--muted);margin:0 0 16px;font-size:.9rem}
 .summary{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
-.box{flex:1;min-width:130px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.box{flex:1;min-width:130px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 14px;box-shadow:0 2px 6px rgba(120,80,40,.08)}
 .box .n{font-size:1.25rem;font-weight:700}
 .l{font-size:.75rem;color:var(--muted)}
-.tabs{display:flex;gap:8px;margin-bottom:14px}
-.tab{flex:1;padding:10px;text-align:center;border-radius:10px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-weight:600;font-size:.9rem}
-.tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tabs{display:flex;gap:10px;margin-bottom:14px}
+.tab{flex:1;padding:12px;text-align:center;border-radius:14px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-weight:700;font-size:.92rem;box-shadow:0 2px 5px rgba(120,80,40,.08);transition:transform .1s}
+.tab:active{transform:scale(.97)}
+.tab.active{background:linear-gradient(135deg,#C08A50,#8A5A2F);color:#fff;border-color:transparent;box-shadow:0 4px 10px rgba(138,90,47,.35)}
 .panel{display:none}.panel.active{display:block}
-.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:14px;box-shadow:0 2px 8px rgba(120,80,40,.08)}
 label{display:block;font-size:.78rem;color:var(--muted);margin:8px 0 4px}
-select,input{width:100%;padding:9px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.95rem}
-button{cursor:pointer}
-.addbtn{margin-top:12px;width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:.95rem}
-.dlbtn{width:100%;padding:10px;margin-bottom:14px;background:var(--card);color:var(--accent-dark);border:1px solid var(--accent);border-radius:10px;font-weight:700;font-size:.9rem}
-.dlmini{background:none;border:1px solid var(--border);color:var(--accent-dark);border-radius:8px;padding:4px 8px;margin-right:8px;font-size:.8rem}
+select,input{width:100%;padding:10px 11px;border-radius:10px;border:1px solid var(--border);background:#fff;color:var(--text);font-size:.95rem}
+select:focus,input:focus{outline:2px solid #D9B98A;border-color:var(--accent)}
+button{cursor:pointer;font-family:inherit;transition:transform .1s,box-shadow .15s,filter .15s}
+button:active{transform:scale(.97)}
+.addbtn{margin-top:14px;width:100%;padding:13px;color:#fff;border:none;border-radius:12px;font-weight:800;font-size:1rem;letter-spacing:.2px;background:linear-gradient(135deg,#C89B63,#8A5A2F);box-shadow:0 4px 12px rgba(138,90,47,.4)}
+.dlbtn{width:100%;padding:12px;margin-bottom:14px;color:#fff;border:none;border-radius:12px;font-weight:800;font-size:.92rem;background:linear-gradient(135deg,#D9503F,#A52A1E);box-shadow:0 4px 12px rgba(165,42,30,.35)}
+.dlmini{color:#fff;border:none;border-radius:999px;padding:6px 11px;margin-right:10px;font-size:.75rem;font-weight:700;background:linear-gradient(135deg,#D9503F,#A52A1E);box-shadow:0 2px 6px rgba(165,42,30,.3)}
 .tablewrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:.85rem}
 th{text-align:left;color:var(--muted);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--border);white-space:nowrap}
 td{padding:8px;border-bottom:1px solid var(--border);white-space:nowrap}
-.del{background:none;border:none;color:var(--danger);font-size:1rem;padding:2px 6px}
+.del{background:#FCE3DF;color:var(--red-dark);border:1px solid #F2B8B0;border-radius:999px;padding:6px 12px;font-size:.76rem;font-weight:700}
+.del:active{background:#F7CBC4}
 .empty{color:var(--muted);text-align:center;padding:20px 0;font-size:.9rem}
 .tot{font-weight:700;color:var(--ok)}
 .section-title{font-weight:700;margin-bottom:6px}
-.hist{display:flex;justify-content:space-between;align-items:center;padding:9px 8px;border-bottom:1px solid var(--border);cursor:pointer;border-radius:8px}
-.hist.cur{background:var(--bg);border:1px solid var(--accent)}
+.hist{display:flex;justify-content:space-between;align-items:center;padding:10px 8px;border-bottom:1px solid var(--border);cursor:pointer;border-radius:10px}
+.hist.cur{background:#FFF3D6;border:1px solid var(--accent)}
 .right{display:flex;align-items:center}
 .status{font-size:.75rem;text-align:center;margin-bottom:12px;padding:6px 10px;border-radius:8px}
 .status.ok{color:var(--ok)}
 .status.err{background:#fbe4e0;color:#8a2a1e}
 .status.wait{color:var(--muted)}
+#modal{position:fixed;inset:0;background:rgba(60,35,15,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:50}
+#modal.show{display:flex}
+.dialog{background:var(--card);border-radius:18px;padding:20px;width:100%;max-width:340px;box-shadow:0 12px 30px rgba(0,0,0,.3);text-align:center}
+.dialog .ico{font-size:2rem}
+.dialog h3{margin:6px 0 6px;font-size:1.1rem}
+.dialog p{margin:0 0 16px;color:var(--muted);font-size:.9rem;word-break:break-word}
+.dialog .row{display:flex;gap:10px}
+.dialog button{flex:1;padding:12px;border-radius:12px;font-weight:800;font-size:.95rem;border:none}
+.btn-cancel{background:#F1E3C8;color:var(--accent-dark)}
+.btn-danger{color:#fff;background:linear-gradient(135deg,#D9503F,#A52A1E);box-shadow:0 4px 10px rgba(165,42,30,.35)}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,30px);background:#3F7A48;color:#fff;padding:12px 18px;border-radius:999px;font-weight:700;font-size:.88rem;box-shadow:0 6px 16px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:all .25s;max-width:92%;text-align:center;z-index:60}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#toast.red{background:#A52A1E}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 <div class="wrap" id="app"></div>
+<div id="modal"><div class="dialog"><div class="ico">🗑️</div><h3 id="m-title"></h3><p id="m-detail"></p>
+<div class="row"><button class="btn-cancel" id="m-cancel">Cancelar</button><button class="btn-danger" id="m-ok">Sí, eliminar</button></div></div></div>
+<div id="toast"></div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, push, set, remove, onValue }
@@ -149,12 +168,12 @@ function render() {
       <label>Libro</label><select id="b-book">${opts(BOOKS)}</select>
       <label>Cantidad</label><input id="b-qty" type="number" min="1" value="1">
       <label>Comprador (opcional)</label><input id="b-buyer" type="text" placeholder="Nombre">
-      <button class="addbtn" onclick="addBook()">Agregar venta</button></div>
+      <button class="addbtn" onclick="addBook()">➕ Agregar venta</button></div>
     <div class="card"><div class="tablewrap">`;
   if (!bs.length) h += `<div class="empty">No hay ventas de libros en esta fecha.</div>`;
   else {
     h += `<table><tr><th>Libro</th><th>Cant.</th><th>Subtotal</th><th>Comprador</th><th></th></tr>`;
-    bs.slice().reverse().forEach(r => h += `<tr><td>${esc(r.book)}</td><td>${r.qty}</td><td class="tot">${fmt(r.qty*r.price)}</td><td>${esc(r.buyer||"—")}</td><td><button class="del" onclick="delItem('${C_BOOKS}','${r.id}')">✕</button></td></tr>`);
+    bs.slice().reverse().forEach(r => h += `<tr><td>${esc(r.book)}</td><td>${r.qty}</td><td class="tot">${fmt(r.qty*r.price)}</td><td>${esc(r.buyer||"—")}</td><td><button class="del" onclick="delItem('${C_BOOKS}','${r.id}')">🗑 Eliminar</button></td></tr>`);
     h += `</table>`;
   }
   h += `</div></div></div>`;
@@ -164,12 +183,12 @@ function render() {
       <label>Servicio</label><select id="s-serv" onchange="fillPrice()">${opts(SERVICES)}</select>
       <label>Precio (₡)</label><input id="s-price" type="number" min="0" value="0">
       <label>Cliente</label><input id="s-client" type="text" placeholder="Nombre">
-      <button class="addbtn" onclick="addServ()">Agregar servicio</button></div>
+      <button class="addbtn" onclick="addServ()">➕ Agregar servicio</button></div>
     <div class="card"><div class="tablewrap">`;
   if (!ss.length) h += `<div class="empty">No hay servicios en esta fecha.</div>`;
   else {
     h += `<table><tr><th>Servicio</th><th>Precio</th><th>Cliente</th><th></th></tr>`;
-    ss.slice().reverse().forEach(r => h += `<tr><td>${esc(r.service)}</td><td class="tot">${fmt(r.price)}</td><td>${esc(r.client||"—")}</td><td><button class="del" onclick="delItem('${C_SERV}','${r.id}')">✕</button></td></tr>`);
+    ss.slice().reverse().forEach(r => h += `<tr><td>${esc(r.service)}</td><td class="tot">${fmt(r.price)}</td><td>${esc(r.client||"—")}</td><td><button class="del" onclick="delItem('${C_SERV}','${r.id}')">🗑 Eliminar</button></td></tr>`);
     h += `</table>`;
   }
   h += `</div></div></div>`;
@@ -177,7 +196,7 @@ function render() {
   h += `<div class="card"><div class="section-title">Historial por fecha</div>`;
   allDates().forEach(dt => h += `<div class="hist ${dt===S.sel?"cur":""}" onclick="pickDate('${dt}')">
       <div><b>${esc(dt)}</b><div class="l">${esc(S.places[dt]||"Sin lugar")}</div></div>
-      <div class="right"><button class="dlmini" onclick="dlDay('${dt}', event)">⬇</button><div class="tot">${fmt(dayTotal(dt))}</div></div></div>`);
+      <div class="right"><button class="dlmini" onclick="dlDay('${dt}', event)">⬇ Excel</button><div class="tot">${fmt(dayTotal(dt))}</div></div></div>`);
   h += `<div class="hist"><div><b>Total acumulado</b></div><div class="tot">${fmt(grand)}</div></div>
     <button class="dlbtn" style="margin:10px 0 0" onclick="dlDay(null, event)">⬇ Descargar todo el historial en Excel</button></div>`;
 
@@ -188,27 +207,52 @@ function render() {
 const fail = e => alert("No se pudo guardar: " + (e.code || e.message));
 const $ = id => document.getElementById(id);
 
+function confirmDialog(title, detail, okText) {
+  return new Promise(res => {
+    const m = $("modal");
+    $("m-title").textContent = title;
+    $("m-detail").textContent = detail || "";
+    $("m-ok").textContent = okText || "Sí, eliminar";
+    m.classList.add("show");
+    const done = v => { m.classList.remove("show"); m.onclick = $("m-ok").onclick = $("m-cancel").onclick = null; res(v); };
+    $("m-ok").onclick = () => done(true);
+    $("m-cancel").onclick = () => done(false);
+    m.onclick = e => { if (e.target === m) done(false); };
+  });
+}
+let toastTimer;
+function toast(msg, red) {
+  const t = $("toast");
+  t.textContent = msg; t.className = "show" + (red ? " red" : "");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = ""; }, 2800);
+}
+
 window.setTab = t => { S.tab = t; render(); if (t === "serv") fillPrice(); };
 window.pickDate = d => { if (d) { S.sel = d; render(); } };
 window.fillPrice = () => { $("s-price").value = SERVICES[$("s-serv").value][1]; };
 window.setPlace = async v => {
-  try { await set(ref(db, C_PLACES + "/" + S.sel), v.trim()); } catch (e) { fail(e); }
+  try { await set(ref(db, C_PLACES + "/" + S.sel), v.trim()); toast("📍 Lugar guardado"); } catch (e) { fail(e); }
 };
 window.addBook = async () => {
   const i = $("b-book").value;
   const rec = { book: BOOKS[i][0], price: BOOKS[i][1], qty: parseInt($("b-qty").value,10) || 1,
                 buyer: $("b-buyer").value.trim(), date: S.sel, ts: Date.now() };
-  try { await push(ref(db, C_BOOKS), rec); $("b-buyer").value = ""; $("b-qty").value = 1; } catch (e) { fail(e); }
+  try { await push(ref(db, C_BOOKS), rec); $("b-buyer").value = ""; $("b-qty").value = 1; toast("✅ Venta registrada: " + rec.qty + " × " + rec.book + " (" + fmt(rec.qty*rec.price) + ")"); } catch (e) { fail(e); }
 };
 window.addServ = async () => {
   const i = $("s-serv").value;
   const rec = { service: SERVICES[i][0], price: parseInt($("s-price").value,10) || 0,
                 client: $("s-client").value.trim(), date: S.sel, ts: Date.now() };
-  try { await push(ref(db, C_SERV), rec); $("s-client").value = ""; } catch (e) { fail(e); }
+  try { await push(ref(db, C_SERV), rec); $("s-client").value = ""; toast("✅ Servicio registrado: " + rec.service + " (" + fmt(rec.price) + ")"); } catch (e) { fail(e); }
 };
 window.delItem = async (col, id) => {
-  if (!confirm("¿Borrar este registro?")) return;
-  try { await remove(ref(db, col + "/" + id)); } catch (e) { fail(e); }
+  const rec = (col === C_BOOKS ? S.books : S.servs).find(r => r.id === id);
+  const detail = !rec ? "" : (col === C_BOOKS
+    ? rec.qty + " × " + rec.book + " — " + fmt(rec.qty*rec.price) + " (" + rec.date + ")"
+    : rec.service + " — " + fmt(rec.price) + " (" + rec.date + ")");
+  if (!(await confirmDialog("¿Eliminar este registro?", detail))) return;
+  try { await remove(ref(db, col + "/" + id)); toast("🗑 Registro eliminado", true); } catch (e) { fail(e); }
 };
 
 // ---------- Excel ----------
