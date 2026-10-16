@@ -165,16 +165,19 @@ function render() {
 
   h += `<div class="panel ${S.tab!=="serv"?"active":""}">
     <div class="card"><div class="section-title">2. Nueva venta de libro</div>
-      <label>Libro</label><select id="b-book">${opts(BOOKS)}</select>
+      <label>Libro</label><select id="b-book" onchange="fillBookPrice()">${opts(BOOKS)}</select>
       <label>Cantidad</label><input id="b-qty" type="number" min="1" value="1">
+      <label>Precio del libro (₡) — editable para precio de feria</label><input id="b-price" type="number" min="0" inputmode="numeric">
+      <label>Método de pago</label><select id="b-pay"><option value="Efectivo">💵 Efectivo</option><option value="SINPE">📱 SINPE</option></select>
       <label>Comprador (opcional)</label><input id="b-buyer" type="text" placeholder="Nombre">
       <button class="addbtn" onclick="addBook()">➕ Agregar venta</button></div>
     <div class="card"><div class="tablewrap">`;
   if (!bs.length) h += `<div class="empty">No hay ventas de libros en esta fecha.</div>`;
   else {
-    h += `<table><tr><th>Libro</th><th>Cant.</th><th>Subtotal</th><th>Comprador</th><th></th></tr>`;
-    bs.slice().reverse().forEach(r => h += `<tr><td>${esc(r.book)}</td><td>${r.qty}</td><td class="tot">${fmt(r.qty*r.price)}</td><td>${esc(r.buyer||"—")}</td><td><button class="del" onclick="delItem('${C_BOOKS}','${r.id}')">🗑 Eliminar</button></td></tr>`);
+    h += `<table><tr><th>Libro</th><th>Cant.</th><th>Precio</th><th>Subtotal</th><th>Pago</th><th>Comprador</th><th></th></tr>`;
+    bs.slice().reverse().forEach(r => h += `<tr><td>${esc(r.book)}</td><td>${r.qty}</td><td>${fmt(r.price)}${r.listPrice!=null&&r.listPrice!==r.price?" ✱":""}</td><td class="tot">${fmt(r.qty*r.price)}</td><td>${r.pay==="SINPE"?"📱 SINPE":r.pay==="Efectivo"?"💵 Efectivo":"—"}</td><td>${esc(r.buyer||"—")}</td><td><button class="del" onclick="delItem('${C_BOOKS}','${r.id}')">🗑 Eliminar</button></td></tr>`);
     h += `</table>`;
+    if (bs.some(r => r.listPrice != null && r.listPrice !== r.price)) h += `<div class="l" style="margin-top:8px">✱ Precio distinto al de catálogo</div>`;
   }
   h += `</div></div></div>`;
 
@@ -202,6 +205,7 @@ function render() {
 
   app.innerHTML = h;
   Object.keys(keep).forEach(id => { const e = document.getElementById(id); if (e && id !== "sel-date") e.value = keep[id]; });
+  const bp = document.getElementById("b-price"); if (bp && bp.value === "") fillBookPrice();
 }
 
 const fail = e => alert("No se pudo guardar: " + (e.code || e.message));
@@ -230,15 +234,18 @@ function toast(msg, red) {
 
 window.setTab = t => { S.tab = t; render(); if (t === "serv") fillPrice(); };
 window.pickDate = d => { if (d) { S.sel = d; render(); } };
+window.fillBookPrice = () => { $("b-price").value = BOOKS[$("b-book").value][1]; };
 window.fillPrice = () => { $("s-price").value = SERVICES[$("s-serv").value][1]; };
 window.setPlace = async v => {
   try { await set(ref(db, C_PLACES + "/" + S.sel), v.trim()); toast("📍 Lugar guardado"); } catch (e) { fail(e); }
 };
 window.addBook = async () => {
   const i = $("b-book").value;
-  const rec = { book: BOOKS[i][0], price: BOOKS[i][1], qty: parseInt($("b-qty").value,10) || 1,
+  const p = parseInt($("b-price").value, 10);
+  const rec = { book: BOOKS[i][0], price: isNaN(p) || p < 0 ? BOOKS[i][1] : p, listPrice: BOOKS[i][1],
+                qty: parseInt($("b-qty").value,10) || 1, pay: $("b-pay").value,
                 buyer: $("b-buyer").value.trim(), date: S.sel, ts: Date.now() };
-  try { await push(ref(db, C_BOOKS), rec); $("b-buyer").value = ""; $("b-qty").value = 1; toast("✅ Venta registrada: " + rec.qty + " × " + rec.book + " (" + fmt(rec.qty*rec.price) + ")"); } catch (e) { fail(e); }
+  try { await push(ref(db, C_BOOKS), rec); $("b-buyer").value = ""; $("b-qty").value = 1; fillBookPrice(); toast("✅ Venta registrada: " + rec.qty + " × " + rec.book + " (" + fmt(rec.qty*rec.price) + ") · " + rec.pay); } catch (e) { fail(e); }
 };
 window.addServ = async () => {
   const i = $("s-serv").value;
@@ -259,16 +266,17 @@ window.delItem = async (col, id) => {
 function dayData(d) {
   const pl = S.places[d] || "";
   const rows = [];
-  S.books.filter(r=>r.date===d).forEach(r => rows.push([d,pl,"Libro",r.book,r.qty,r.price,r.qty*r.price,r.buyer||""]));
-  S.servs.filter(r=>r.date===d).forEach(r => rows.push([d,pl,"Servicio",r.service,1,r.price,r.price,r.client||""]));
-  return { rows, tb: sumB(S.books.filter(r=>r.date===d)), ts: sumS(S.servs.filter(r=>r.date===d)), place: pl };
+  S.books.filter(r=>r.date===d).forEach(r => rows.push([d,pl,"Libro",r.book,r.qty,r.price,r.qty*r.price,r.pay||"",r.buyer||""]));
+  S.servs.filter(r=>r.date===d).forEach(r => rows.push([d,pl,"Servicio",r.service,1,r.price,r.price,"",r.client||""]));
+  const bd = S.books.filter(r=>r.date===d);
+  return { rows, cash: sumB(bd.filter(r=>r.pay==="Efectivo")), sinpe: sumB(bd.filter(r=>r.pay==="SINPE")), tb: sumB(bd), ts: sumS(S.servs.filter(r=>r.date===d)), place: pl };
 }
 function daySheet(d) {
   const x = dayData(d);
-  const aoa = [["Fecha","Lugar","Tipo","Detalle","Cantidad","Precio unitario (₡)","Subtotal (₡)","Comprador/Cliente"], ...x.rows, [],
-    ["","","","","","Total libros",x.tb,""],["","","","","","Total servicios",x.ts,""],["","","","","","TOTAL DEL DÍA",x.tb+x.ts,""]];
+  const aoa = [["Fecha","Lugar","Tipo","Detalle","Cantidad","Precio unitario (₡)","Subtotal (₡)","Método de pago","Comprador/Cliente"], ...x.rows, [],
+    ["","","","","","Total libros",x.tb,""],["","","","","","  de libros en efectivo",x.cash,""],["","","","","","  de libros por SINPE",x.sinpe,""],["","","","","","Total servicios",x.ts,""],["","","","","","TOTAL DEL DÍA",x.tb+x.ts,""]];
   const ws = XLSX.utils.aoa_to_sheet(aoa);
-  ws["!cols"] = [12,22,10,36,9,18,14,22].map(wch => ({ wch }));
+  ws["!cols"] = [12,22,10,36,9,18,14,14,22].map(wch => ({ wch }));
   return { ws, x };
 }
 window.dlDay = (dt, ev) => {
