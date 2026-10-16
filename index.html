@@ -17,7 +17,7 @@ h1{font-size:1.3rem;margin:0 0 4px}
 .box .n{font-size:1.25rem;font-weight:700}
 .l{font-size:.75rem;color:var(--muted)}
 .tabs{display:flex;gap:10px;margin-bottom:14px}
-.tab{flex:1;padding:12px;text-align:center;border-radius:14px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-weight:700;font-size:.92rem;box-shadow:0 2px 5px rgba(120,80,40,.08);transition:transform .1s}
+.tab{flex:1;padding:12px 4px;text-align:center;border-radius:14px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-weight:700;font-size:.82rem;box-shadow:0 2px 5px rgba(120,80,40,.08);transition:transform .1s}
 .tab:active{transform:scale(.97)}
 .tab.active{background:linear-gradient(135deg,#C08A50,#8A5A2F);color:#fff;border-color:transparent;box-shadow:0 4px 10px rgba(138,90,47,.35)}
 .panel{display:none}.panel.active{display:block}
@@ -46,8 +46,8 @@ td{padding:8px;border-bottom:1px solid var(--border);white-space:nowrap}
 .status.ok{color:var(--ok)}
 .status.err{background:#fbe4e0;color:#8a2a1e}
 .status.wait{color:var(--muted)}
-#modal{position:fixed;inset:0;background:rgba(60,35,15,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:50}
-#modal.show{display:flex}
+#modal,#modal2{position:fixed;inset:0;background:rgba(60,35,15,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:50}
+#modal.show,#modal2.show{display:flex}
 .dialog{background:var(--card);border-radius:18px;padding:20px;width:100%;max-width:340px;box-shadow:0 12px 30px rgba(0,0,0,.3);text-align:center}
 .dialog .ico{font-size:2rem}
 .dialog h3{margin:6px 0 6px;font-size:1.1rem}
@@ -56,6 +56,13 @@ td{padding:8px;border-bottom:1px solid var(--border);white-space:nowrap}
 .dialog button{flex:1;padding:12px;border-radius:12px;font-weight:800;font-size:.95rem;border:none}
 .btn-cancel{background:#F1E3C8;color:var(--accent-dark)}
 .btn-danger{color:#fff;background:linear-gradient(135deg,#D9503F,#A52A1E);box-shadow:0 4px 10px rgba(165,42,30,.35)}
+.dialog label{text-align:left}
+.btn-save{color:#fff;background:linear-gradient(135deg,#C89B63,#8A5A2F);box-shadow:0 4px 10px rgba(138,90,47,.35)}
+.invrow{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 4px;border-bottom:1px solid var(--border)}
+.invrow.off{opacity:.55}
+.invbtns{display:flex;gap:6px;align-items:center}
+.mini{background:#F1E3C8;color:var(--accent-dark);border:1px solid var(--border);border-radius:999px;padding:6px 11px;font-size:.76rem;font-weight:700}
+.low{color:var(--red);font-weight:700}
 #toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,30px);background:#3F7A48;color:#fff;padding:12px 18px;border-radius:999px;font-weight:700;font-size:.88rem;box-shadow:0 6px 16px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:all .25s;max-width:92%;text-align:center;z-index:60}
 #toast.show{opacity:1;transform:translate(-50%,0)}
 #toast.red{background:#A52A1E}
@@ -64,12 +71,17 @@ td{padding:8px;border-bottom:1px solid var(--border);white-space:nowrap}
 </head>
 <body>
 <div class="wrap" id="app"></div>
-<div id="modal"><div class="dialog"><div class="ico">🗑️</div><h3 id="m-title"></h3><p id="m-detail"></p>
+<div id="modal"><div class="dialog"><div class="ico" id="m-ico">🗑️</div><h3 id="m-title"></h3><p id="m-detail"></p>
 <div class="row"><button class="btn-cancel" id="m-cancel">Cancelar</button><button class="btn-danger" id="m-ok">Sí, eliminar</button></div></div></div>
+<div id="modal2"><div class="dialog"><div class="ico">✏️</div><h3>Editar libro</h3>
+<label>Título</label><input id="e-title" type="text">
+<label>Precio (₡)</label><input id="e-price" type="number" min="0" inputmode="numeric">
+<label>Existencias (vacío = sin control)</label><input id="e-stock" type="number" min="0" inputmode="numeric">
+<div class="row" style="margin-top:16px"><button class="btn-cancel" id="e-cancel">Cancelar</button><button class="btn-save" id="e-ok">Guardar</button></div></div></div>
 <div id="toast"></div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, push, set, remove, onValue }
+import { getDatabase, ref, push, set, remove, update, runTransaction, onValue }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const firebaseConfig = {
@@ -87,7 +99,9 @@ const db = getDatabase(initializeApp(firebaseConfig));
 const C_BOOKS = "ojoaguila/libros";
 const C_SERV = "ojoaguila/servicios";
 const C_PLACES = "ojoaguila/lugares";
+const C_INV = "ojoaguila/inventario";
 
+// Catálogo inicial: solo se usa una vez para llenar el inventario la primera vez
 const BOOKS = [
   ["Léeme un Cuento",8000],["Viaje Mágico al Mundo del Saber",10000],["No Regreses Jamás",7000],
   ["13 Portales de Terror",10000],["Susúrralo Tres Veces",10000],["Historias Jamás Contadas",6000],
@@ -107,9 +121,14 @@ const pad = n => String(n).padStart(2, "0");
 const todayStr = () => { const d = new Date(); return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); };
 const fmt = n => "₡" + Number(n).toLocaleString("es-CR");
 const esc = s => String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+const bookOpts = () => {
+  const l = S.inv.filter(b => b.active !== false);
+  if (!l.length) return `<option value="">(agrega libros en Inventario)</option>`;
+  return l.map(b => `<option value="${esc(b.id)}">${esc(b.title)} — ${fmt(b.price)}${b.stock != null ? " · " + b.stock + " disp." : ""}</option>`).join("");
+};
 const opts = list => list.map((x,i)=>`<option value="${i}">${esc(x[0])} — ${x[1]?fmt(x[1]):"precio libre"}</option>`).join("");
 
-const S = { sel: todayStr(), tab: "libros", books: [], servs: [], places: {}, status: "wait" };
+const S = { sel: todayStr(), tab: "libros", books: [], servs: [], places: {}, inv: [], invRaw: {}, status: "wait" };
 
 function listen(path, apply) {
   onValue(ref(db, path), snap => {
@@ -121,6 +140,22 @@ const toList = o => Object.entries(o).map(([id, x]) => ({ id, ...x })).sort((a,b
 listen(C_BOOKS, o => S.books = toList(o));
 listen(C_SERV, o => S.servs = toList(o));
 listen(C_PLACES, o => S.places = o);
+
+let invLoaded = false, seeded = null;
+listen(C_INV, o => {
+  S.invRaw = o;
+  S.inv = Object.entries(o).map(([id, x]) => ({ id, ...x })).sort((a,b) => (a.title||"").localeCompare(b.title||"", "es"));
+  invLoaded = true; maybeSeed();
+});
+onValue(ref(db, "ojoaguila/seeded"), snap => { seeded = !!snap.val(); maybeSeed(); });
+function maybeSeed() {
+  if (!invLoaded || seeded === null || seeded) return;
+  seeded = true;
+  if (Object.keys(S.invRaw).length) { set(ref(db, "ojoaguila/seeded"), true).catch(()=>{}); return; }
+  const up = { seeded: true };
+  BOOKS.forEach((b, i) => { up["inventario/b" + pad(i+1)] = { title: b[0], price: b[1], active: true, ts: i }; });
+  update(ref(db, "ojoaguila"), up).catch(()=>{});
+}
 
 const inDate = l => l.filter(r => r.date === S.sel);
 const sumB = l => l.reduce((s,r)=>s+r.qty*r.price,0);
@@ -160,12 +195,13 @@ function render() {
     <div class="box"><div class="n">${fmt(tb+ts)}</div><div class="l">Total del día</div></div></div>
     <button class="dlbtn" onclick="dlDay('${esc(S.sel)}', event)">⬇ Descargar este día en Excel (${esc(S.sel)})</button>
     <div class="tabs">
-      <div class="tab ${S.tab!=="serv"?"active":""}" onclick="setTab('libros')">📚 Libros</div>
-      <div class="tab ${S.tab==="serv"?"active":""}" onclick="setTab('serv')">🛠️ Servicios</div></div>`;
+      <div class="tab ${S.tab==="libros"?"active":""}" onclick="setTab('libros')">📚 Libros</div>
+      <div class="tab ${S.tab==="serv"?"active":""}" onclick="setTab('serv')">🛠️ Servicios</div>
+      <div class="tab ${S.tab==="inv"?"active":""}" onclick="setTab('inv')">📦 Inventario</div></div>`;
 
-  h += `<div class="panel ${S.tab!=="serv"?"active":""}">
+  h += `<div class="panel ${S.tab==="libros"?"active":""}">
     <div class="card"><div class="section-title">2. Nueva venta de libro</div>
-      <label>Libro</label><select id="b-book" onchange="fillBookPrice()">${opts(BOOKS)}</select>
+      <label>Libro</label><select id="b-book" onchange="fillBookPrice()">${bookOpts()}</select>
       <label>Cantidad</label><input id="b-qty" type="number" min="1" value="1">
       <label>Precio del libro (₡) — editable para precio de feria</label><input id="b-price" type="number" min="0" inputmode="numeric">
       <label>Método de pago</label><select id="b-pay"><option value="Efectivo">💵 Efectivo</option><option value="SINPE">📱 SINPE</option></select>
@@ -196,6 +232,23 @@ function render() {
   }
   h += `</div></div></div>`;
 
+  h += `<div class="panel ${S.tab==="inv"?"active":""}">
+    <div class="card"><div class="section-title">Agregar libro al inventario</div>
+      <label>Título</label><input id="i-title" type="text" placeholder="Título del libro">
+      <label>Precio (₡)</label><input id="i-price" type="number" min="0" inputmode="numeric">
+      <label>Existencias (opcional; vacío = sin control)</label><input id="i-stock" type="number" min="0" inputmode="numeric">
+      <button class="addbtn" onclick="addInv()">➕ Agregar libro</button></div>
+    <div class="card"><div class="section-title">Libros (${S.inv.length})</div>`;
+  if (!S.inv.length) h += `<div class="empty">Cargando inventario…</div>`;
+  S.inv.forEach(b => {
+    const st = b.stock == null ? "sin control de existencias" : (b.stock <= 3 ? `<span class="low">${b.stock} disp.</span>` : `${b.stock} disp.`);
+    h += `<div class="invrow ${b.active===false?"off":""}"><div><b>${esc(b.title)}</b><div class="l">${fmt(b.price)} · ${st}${b.active===false?" · oculto":""}</div></div>
+      <div class="invbtns"><button class="mini" onclick="editInv('${esc(b.id)}')">✏️ Editar</button>
+      <button class="mini" onclick="toggleInv('${esc(b.id)}')">${b.active===false?"👁 Mostrar":"🙈 Ocultar"}</button>
+      <button class="del" onclick="delInv('${esc(b.id)}')">🗑</button></div></div>`;
+  });
+  h += `</div></div>`;
+
   h += `<div class="card"><div class="section-title">Historial por fecha</div>`;
   allDates().forEach(dt => h += `<div class="hist ${dt===S.sel?"cur":""}" onclick="pickDate('${dt}')">
       <div><b>${esc(dt)}</b><div class="l">${esc(S.places[dt]||"Sin lugar")}</div></div>
@@ -204,19 +257,19 @@ function render() {
     <button class="dlbtn" style="margin:10px 0 0" onclick="dlDay(null, event)">⬇ Descargar todo el historial en Excel</button></div>`;
 
   app.innerHTML = h;
-  Object.keys(keep).forEach(id => { const e = document.getElementById(id); if (e && id !== "sel-date") e.value = keep[id]; });
+  Object.keys(keep).forEach(id => { const e = document.getElementById(id); if (e && id !== "sel-date" && (e.tagName !== "SELECT" || [...e.options].some(o => o.value === keep[id]))) e.value = keep[id]; });
   const bp = document.getElementById("b-price"); if (bp && bp.value === "") fillBookPrice();
 }
 
 const fail = e => alert("No se pudo guardar: " + (e.code || e.message));
 const $ = id => document.getElementById(id);
 
-function confirmDialog(title, detail, okText) {
+function confirmDialog(title, detail, okText, icon) {
   return new Promise(res => {
     const m = $("modal");
     $("m-title").textContent = title;
     $("m-detail").textContent = detail || "";
-    $("m-ok").textContent = okText || "Sí, eliminar";
+    $("m-ok").textContent = okText || "Sí, eliminar"; $("m-ico").textContent = icon || "🗑️";
     m.classList.add("show");
     const done = v => { m.classList.remove("show"); m.onclick = $("m-ok").onclick = $("m-cancel").onclick = null; res(v); };
     $("m-ok").onclick = () => done(true);
@@ -234,18 +287,26 @@ function toast(msg, red) {
 
 window.setTab = t => { S.tab = t; render(); if (t === "serv") fillPrice(); };
 window.pickDate = d => { if (d) { S.sel = d; render(); } };
-window.fillBookPrice = () => { $("b-price").value = BOOKS[$("b-book").value][1]; };
+window.fillBookPrice = () => { const b = S.inv.find(x => x.id === $("b-book").value); $("b-price").value = b ? b.price : ""; };
 window.fillPrice = () => { $("s-price").value = SERVICES[$("s-serv").value][1]; };
 window.setPlace = async v => {
   try { await set(ref(db, C_PLACES + "/" + S.sel), v.trim()); toast("📍 Lugar guardado"); } catch (e) { fail(e); }
 };
 window.addBook = async () => {
-  const i = $("b-book").value;
+  const b = S.inv.find(x => x.id === $("b-book").value);
+  if (!b) { alert("Primero agrega libros en la pestaña Inventario."); return; }
+  const qty = parseInt($("b-qty").value,10) || 1;
   const p = parseInt($("b-price").value, 10);
-  const rec = { book: BOOKS[i][0], price: isNaN(p) || p < 0 ? BOOKS[i][1] : p, listPrice: BOOKS[i][1],
-                qty: parseInt($("b-qty").value,10) || 1, pay: $("b-pay").value,
-                buyer: $("b-buyer").value.trim(), date: S.sel, ts: Date.now() };
-  try { await push(ref(db, C_BOOKS), rec); $("b-buyer").value = ""; $("b-qty").value = 1; fillBookPrice(); toast("✅ Venta registrada: " + rec.qty + " × " + rec.book + " (" + fmt(rec.qty*rec.price) + ") · " + rec.pay); } catch (e) { fail(e); }
+  if (b.stock != null && qty > b.stock &&
+      !(await confirmDialog("Existencias insuficientes", "Solo quedan " + b.stock + " de «" + b.title + "». ¿Registrar la venta de todos modos?", "Sí, registrar", "⚠️"))) return;
+  const rec = { book: b.title, bookId: b.id, price: isNaN(p) || p < 0 ? b.price : p, listPrice: b.price,
+                qty, pay: $("b-pay").value, buyer: $("b-buyer").value.trim(), date: S.sel, ts: Date.now() };
+  try {
+    await push(ref(db, C_BOOKS), rec);
+    if (b.stock != null) await runTransaction(ref(db, C_INV + "/" + b.id + "/stock"), cur => cur == null ? cur : Math.max(0, cur - qty));
+    $("b-buyer").value = ""; $("b-qty").value = 1; fillBookPrice();
+    toast("✅ Venta registrada: " + rec.qty + " × " + rec.book + " (" + fmt(rec.qty*rec.price) + ") · " + rec.pay);
+  } catch (e) { fail(e); }
 };
 window.addServ = async () => {
   const i = $("s-serv").value;
@@ -255,11 +316,57 @@ window.addServ = async () => {
 };
 window.delItem = async (col, id) => {
   const rec = (col === C_BOOKS ? S.books : S.servs).find(r => r.id === id);
+  const inv = rec && col === C_BOOKS && rec.bookId ? S.inv.find(x => x.id === rec.bookId) : null;
+  const back = inv && inv.stock != null;
   const detail = !rec ? "" : (col === C_BOOKS
     ? rec.qty + " × " + rec.book + " — " + fmt(rec.qty*rec.price) + " (" + rec.date + ")"
-    : rec.service + " — " + fmt(rec.price) + " (" + rec.date + ")");
+    : rec.service + " — " + fmt(rec.price) + " (" + rec.date + ")") + (back ? " · se devolverán " + rec.qty + " al inventario" : "");
   if (!(await confirmDialog("¿Eliminar este registro?", detail))) return;
-  try { await remove(ref(db, col + "/" + id)); toast("🗑 Registro eliminado", true); } catch (e) { fail(e); }
+  try {
+    await remove(ref(db, col + "/" + id));
+    if (back) await runTransaction(ref(db, C_INV + "/" + inv.id + "/stock"), cur => cur == null ? cur : cur + rec.qty);
+    toast("🗑 Registro eliminado", true);
+  } catch (e) { fail(e); }
+};
+
+// ---------- Inventario ----------
+function editDialog(b) {
+  return new Promise(res => {
+    const m = $("modal2");
+    $("e-title").value = b.title; $("e-price").value = b.price; $("e-stock").value = b.stock == null ? "" : b.stock;
+    m.classList.add("show");
+    const done = v => { m.classList.remove("show"); m.onclick = $("e-ok").onclick = $("e-cancel").onclick = null; res(v); };
+    $("e-ok").onclick = () => done({ title: $("e-title").value.trim(), price: parseInt($("e-price").value,10), sv: $("e-stock").value.trim() });
+    $("e-cancel").onclick = () => done(null);
+    m.onclick = e => { if (e.target === m) done(null); };
+  });
+}
+const parseStock = sv => sv === "" ? null : Math.max(0, parseInt(sv,10) || 0);
+window.addInv = async () => {
+  const title = $("i-title").value.trim(), price = parseInt($("i-price").value,10);
+  if (!title || isNaN(price) || price < 0) { alert("Escribe el título y el precio del libro."); return; }
+  try {
+    await push(ref(db, C_INV), { title, price, stock: parseStock($("i-stock").value.trim()), active: true, ts: Date.now() });
+    $("i-title").value = ""; $("i-price").value = ""; $("i-stock").value = "";
+    toast("📦 Libro agregado: " + title);
+  } catch (e) { fail(e); }
+};
+window.editInv = async id => {
+  const b = S.inv.find(x => x.id === id); if (!b) return;
+  const v = await editDialog(b); if (!v) return;
+  if (!v.title || isNaN(v.price) || v.price < 0) { alert("Escribe el título y el precio del libro."); return; }
+  try { await update(ref(db, C_INV + "/" + id), { title: v.title, price: v.price, stock: parseStock(v.sv) }); toast("✅ Libro actualizado"); }
+  catch (e) { fail(e); }
+};
+window.toggleInv = async id => {
+  const b = S.inv.find(x => x.id === id); if (!b) return;
+  try { await set(ref(db, C_INV + "/" + id + "/active"), b.active === false); toast(b.active === false ? "👁 Libro visible para ventas" : "🙈 Libro oculto de ventas"); }
+  catch (e) { fail(e); }
+};
+window.delInv = async id => {
+  const b = S.inv.find(x => x.id === id); if (!b) return;
+  if (!(await confirmDialog("¿Eliminar este libro del inventario?", b.title + " — las ventas ya registradas se conservan."))) return;
+  try { await remove(ref(db, C_INV + "/" + id)); toast("🗑 Libro eliminado", true); } catch (e) { fail(e); }
 };
 
 // ---------- Excel ----------
